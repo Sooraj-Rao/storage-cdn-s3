@@ -97,7 +97,7 @@ export default function DashboardPage() {
           message: `${fileToDelete.filename} deleted successfully!`,
           type: "success",
         });
-        fetchUserAndFiles(); 
+        fetchUserAndFiles();
       } else {
         const data = await response.json();
         setToast({
@@ -250,7 +250,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen text-black flex items-center justify-center">
         Loading...
       </div>
     );
@@ -263,66 +263,19 @@ export default function DashboardPage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <nav className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between sm:h-16 h-20">
             <div className="flex items-center">
-              <h1 className="text-xl font-semibold">File Dashboard</h1>
+              <h1 className="sm:text-xl text-sm font-semibold text-black">
+                {" "}
+                Dashboard
+              </h1>
             </div>
-            <div className="flex items-center space-x-4">
-              {!isMultiSelectMode && (
-                <>
-                  <button
-                    onClick={() => setIsMultiSelectMode(true)}
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Select
-                  </button>
-                  <Link
-                    href="/upload"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                  >
-                    Upload File
-                  </Link>
-                </>
-              )}
-              {isMultiSelectMode && (
-                <>
-                  <span className="text-sm text-gray-600">
-                    {selectedFiles.size} selected
-                  </span>
-                  <button
-                    onClick={selectAllFiles}
-                    className="text-indigo-600 hover:text-indigo-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    {selectedFiles.size === files.length
-                      ? "Deselect All"
-                      : "Select All"}
-                  </button>
-                  {selectedFiles.size > 0 && (
-                    <button
-                      onClick={() => setIsBulkDeleteModalOpen(true)}
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                    >
-                      Delete Selected
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      setIsMultiSelectMode(false);
-                      setSelectedFiles(new Set());
-                    }}
-                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Cancel
-                  </button>
-                </>
-              )}
-              <LogoutButton />
-            </div>
+
+            <LogoutButton />
           </div>
         </div>
       </nav>
@@ -331,13 +284,73 @@ export default function DashboardPage() {
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
-              Welcome, {user.email}
+              Welcome, {user.email.split("@")[0]}
             </h2>
             <p className="text-gray-600">
               Manage your uploaded files and access settings
             </p>
           </div>
+          <div className=" text-end mb-4 ">
+            <div className="flex items-center space-x-4">
+              {isMultiSelectMode && (
+                <>
+                  <span className="sm:text-sm text-xs text-gray-600">
+                    {selectedFiles.size} selected
+                  </span>
+                  <button
+                    onClick={selectAllFiles}
+                    className="text-indigo-600 hover:text-indigo-900 px-3 py-2 rounded-md sm:text-sm text-xs font-medium"
+                  >
+                    {selectedFiles.size === files.length
+                      ? "Deselect All"
+                      : "Select All"}
+                  </button>
 
+                  <button
+                    onClick={() => {
+                      setIsMultiSelectMode(false);
+                      setSelectedFiles(new Set());
+                    }}
+                    className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md sm:text-sm text-xs font-medium"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+            <div
+              className={`flex  gap-4 m-2 
+             ${isMultiSelectMode && (selectedFiles.size == 0) ? "justify-end":'justify-between'}
+              `}
+            >
+              {!isMultiSelectMode && (
+                <>
+                  {files.length !== 0 && (
+                    <button
+                      onClick={() => setIsMultiSelectMode(true)}
+                      className="text-gray-600 bg-gray-300 hover:text-gray-900 px-3 py-2 rounded-md sm:text-sm text-xs font-medium"
+                    >
+                      Select multiple
+                    </button>
+                  )}
+                </>
+              )}
+              {isMultiSelectMode && selectedFiles.size > 0 && (
+                <button
+                  onClick={() => setIsBulkDeleteModalOpen(true)}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md sm:text-sm text-xs font-medium"
+                >
+                  Delete Selected
+                </button>
+              )}
+              <Link
+                href="/upload"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md sm:text-sm text-xs font-medium"
+              >
+                Upload File
+              </Link>
+            </div>
+          </div>
           {files.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500 text-lg mb-4">
