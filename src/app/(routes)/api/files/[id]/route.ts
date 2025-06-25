@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/app/lib/auth";
+import { validateApiKey } from "@/app/lib/api-auth";
 import { connectToDatabase, FileRecord } from "@/app/lib/db";
 import { getFileFromS3 } from "@/app/lib/s3";
 import mongoose from "mongoose";
@@ -10,10 +10,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const url = new URL(request.url);
-    const passkey = url.searchParams.get("passkey");
-    const isDownload = url.searchParams.get("download") === "true";
-
     await connectToDatabase();
 
     let file = null;
@@ -25,27 +21,14 @@ export async function GET(
     if (!file) {
       file = await FileRecord.findOne({ publicId: id });
     }
-
     if (!file) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
     if (file.accessType === "private") {
-      const user = await getCurrentUser();
-      if (!user) {
+      if (!validateApiKey(request)) {
         return NextResponse.json(
-          { error: "Authentication required" },
-          { status: 401 }
-        );
-      }
-
-      if (file.userId.toString() !== user._id.toString()) {
-        return NextResponse.json({ error: "Access denied" }, { status: 403 });
-      }
-    } else if (file.accessType === "passkey") {
-      if (!passkey || passkey !== file.passkey) {
-        return NextResponse.json(
-          { error: "Invalid or missing passkey" },
+          { error: "API key required for private files" },
           { status: 401 }
         );
       }
@@ -63,19 +46,10 @@ export async function GET(
       headers.set("Content-Length", contentLength.toString());
     }
 
-    if (isDownload) {
-      headers.set(
-        "Content-Disposition",
-        `attachment; filename="${file.filename}"`
-      );
-    } else {
-      headers.set("Content-Disposition", `inline; filename="${file.filename}"`);
-    }
-
     if (file.accessType === "public") {
-      headers.set("Cache-Control", "public, max-age=3600");
+      headers.set("Cache-Control", "public, max-age=31536000, immutable"); // 1  yr
     } else {
-      headers.set("Cache-Control", "private, max-age=3600");
+      headers.set("Cache-Control", "private, no-cache");
     }
 
     return new NextResponse(body, { headers });

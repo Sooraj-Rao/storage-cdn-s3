@@ -12,6 +12,7 @@
     "@aws-sdk/client-s3": "^3.490.0",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.523.0",
     "mongoose": "^8.16.0",
     "next": "14.2.30",
     "react": "^18",

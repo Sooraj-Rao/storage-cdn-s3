@@ -38,24 +38,6 @@ export async function connectToDatabase() {
   return cached.conn
 }
 
-const userSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true,
-  },
-  passwordHash: {
-    type: String,
-    required: true,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
-})
-
 const fileSchema = new mongoose.Schema({
   filename: {
     type: String,
@@ -74,23 +56,20 @@ const fileSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
   accessType: {
     type: String,
-    enum: ["private", "public", "passkey"],
-    default: "private",
+    enum: ["private", "public"],
+    default: "public",
     required: true,
-  },
-  passkey: {
-    type: String,
-    default: null,
   },
   publicId: {
     type: String,
+    unique: true,
+    sparse: true,
+  },
+  folderName: {
+    type: String,
+    default: "uploads",
   },
   uploadedAt: {
     type: Date,
@@ -98,17 +77,10 @@ const fileSchema = new mongoose.Schema({
   },
 })
 
+fileSchema.index({ s3Key: 1 })
+fileSchema.index({ publicId: 1 })
 
-
-export const User = mongoose.models.User || mongoose.model("User", userSchema)
 export const FileRecord = mongoose.models.FileRecord || mongoose.model("FileRecord", fileSchema)
-
-export interface IUser extends mongoose.Document {
-  _id: string
-  email: string
-  passwordHash: string
-  createdAt: Date
-}
 
 export interface IFileRecord extends mongoose.Document {
   _id: string
@@ -116,9 +88,15 @@ export interface IFileRecord extends mongoose.Document {
   s3Key: string
   contentType: string
   size: number
-  userId: string
-  accessType: "private" | "public" | "passkey"
-  passkey?: string
+  accessType: "private" | "public"
   publicId?: string
+  folderName: string
   uploadedAt: Date
+}
+
+export function validateAdminCredentials(email: string, password: string): boolean {
+  const adminEmail = process.env.ADMIN_EMAIL
+  const adminPassword = process.env.ADMIN_PASSWORD
+
+  return email === adminEmail && password === adminPassword
 }
