@@ -3,7 +3,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Trash2, Eye, LogOut, RefreshCw } from "lucide-react";
+import { Search, Trash2, Eye, LogOut, RefreshCw, Upload } from "lucide-react";
+import Link from "next/link";
 
 interface FileRecord {
   _id: string;
@@ -21,11 +22,6 @@ export default function AdminDashboard() {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFolder, setSelectedFolder] = useState("");
-  const [accessFilter, setAccessFilter] = useState<
-    "all" | "public" | "private"
-  >("all");
-  const [folders, setFolders] = useState<string[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -49,13 +45,6 @@ export default function AdminDashboard() {
       if (response.ok) {
         const data = await response.json();
         setFiles(data.files);
-        const uniqueFolders: string[] = Array.from(
-          new Set(
-            data.files.map((f: FileRecord) => f.folderName).filter(Boolean)
-          )
-        );
-
-        setFolders(uniqueFolders);
       }
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -91,40 +80,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const updateFileAccess = async (
-    fileId: string,
-    newAccessType: "public" | "private"
-  ) => {
-    try {
-      const response = await fetch(`/api/admin/files/${fileId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessType: newAccessType }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(
-          files.map((f) =>
-            f._id === fileId
-              ? { ...f, accessType: newAccessType, publicId: data.publicId }
-              : f
-          )
-        );
-        alert("Access updated!");
-      } else {
-        const data = await response.json();
-        alert("Update failed: " + data.error);
-      }
-    } catch (error) {
-      alert("Update failed: " + (error as Error).message);
-    }
-  };
-
   const getFileUrl = (file: FileRecord) => {
     const baseUrl = window.location.origin;
-    return file.accessType === "public" && file.publicId
-      ? `${baseUrl}/api/files/${file.publicId}`
-      : `${baseUrl}/file/${file._id}`;
+    return `${baseUrl}/api/files/${file.publicId}`;
   };
 
   const copyUrl = (url: string) => {
@@ -144,22 +102,13 @@ export default function AdminDashboard() {
 
   const filteredFiles = files.filter((file) => {
     const query = searchQuery.toLowerCase();
-    if (
-      (searchQuery &&
-        !file.filename.toLowerCase().includes(query) &&
-        !file.contentType.toLowerCase().includes(query) &&
-        !file?.folderName?.toLowerCase().includes(query)) ||
-      (selectedFolder && file.folderName !== selectedFolder) ||
-      (accessFilter !== "all" && file.accessType !== accessFilter)
-    ) {
+    if (searchQuery && !file.filename.toLowerCase().includes(query)) {
       return false;
     }
     return true;
   });
 
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-  const publicFiles = files.filter((f) => f.accessType === "public").length;
-  const privateFiles = files.filter((f) => f.accessType === "private").length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -179,14 +128,6 @@ export default function AdminDashboard() {
           <div className="text-2xl font-bold">{formatFileSize(totalSize)}</div>
           <div className="text-sm text-gray-500">Total Size</div>
         </div>
-        <div className="bg-white shadow p-4 rounded">
-          <div className="text-2xl font-bold text-green-600">{publicFiles}</div>
-          <div className="text-sm text-gray-500">Public Files</div>
-        </div>
-        <div className="bg-white shadow p-4 rounded">
-          <div className="text-2xl font-bold text-blue-600">{privateFiles}</div>
-          <div className="text-sm text-gray-500">Private Files</div>
-        </div>
       </div>
 
       <div className="bg-white shadow p-4 rounded mb-6 space-y-4">
@@ -199,41 +140,12 @@ export default function AdminDashboard() {
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                className="pl-10 w-full border rounded px-2 py-1"
+                className="pl-10 w-fit border rounded px-2 py-1"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by filename, type, or folder..."
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Folder</label>
-            <select
-              value={selectedFolder}
-              onChange={(e) => setSelectedFolder(e.target.value)}
-              className="w-48 border rounded px-2 py-1"
-            >
-              <option value="">All folders</option>
-              {folders.map((folder) => (
-                <option key={folder} value={folder}>
-                  {folder}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Access</label>
-            <select
-              value={accessFilter}
-              onChange={(e) => setAccessFilter(e.target.value as any)}
-              className="w-32 border rounded px-2 py-1"
-            >
-              <option value="all">All</option>
-              <option value="public">Public</option>
-              <option value="private">Private</option>
-            </select>
           </div>
 
           <div className="flex items-end">
@@ -245,6 +157,14 @@ export default function AdminDashboard() {
               <RefreshCw className="inline-block w-4 h-4 mr-2" /> Refresh
             </button>
           </div>
+
+            <div className="flex items-end">
+          <Link href="/upload">
+              <button className="px-3 py-2 bg-gray-100 rounded border">
+                <Upload className="inline-block w-4 h-4 mr-2" /> Upload
+              </button>
+          </Link>
+            </div>
         </div>
       </div>
 
@@ -301,17 +221,7 @@ export default function AdminDashboard() {
                       {" "}
                       <Eye className="w-4 h-4" />{" "}
                     </button>
-                    <button
-                      className="px-2 py-1 border rounded text-sm"
-                      onClick={() =>
-                        updateFileAccess(
-                          file._id,
-                          file.accessType === "public" ? "private" : "public"
-                        )
-                      }
-                    >
-                      Make {file.accessType === "public" ? "Private" : "Public"}
-                    </button>
+
                     <button
                       className="p-2 border rounded text-red-600"
                       onClick={() => deleteFile(file._id, file.filename)}

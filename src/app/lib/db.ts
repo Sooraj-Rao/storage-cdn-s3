@@ -1,41 +1,43 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI!
+const MONGODB_URI = process.env.MONGODB_URI!;
 
 if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local")
+  throw new Error(
+    "Please define the MONGODB_URI environment variable inside .env.local"
+  );
 }
 
-let cached = (global as any).mongoose
+let cached = (global as any).mongoose;
 
 if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null }
+  cached = (global as any).mongoose = { conn: null, promise: null };
 }
 
 export async function connectToDatabase() {
   if (cached.conn) {
-    return cached.conn
+    return cached.conn;
   }
 
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-    }
+    };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      return mongoose
-    })
+      return mongoose;
+    });
   }
 
   try {
-    cached.conn = await cached.promise
+    cached.conn = await cached.promise;
   } catch (e) {
-    cached.promise = null
-    throw e
+    cached.promise = null;
+    throw e;
   }
 
-  return cached.conn
+  return cached.conn;
 }
 
 const fileSchema = new mongoose.Schema({
@@ -43,60 +45,46 @@ const fileSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  
   s3Key: {
     type: String,
     required: true,
     unique: true,
   },
-  contentType: {
+  publicId: {
     type: String,
     required: true,
+    unique: true,
   },
   size: {
     type: Number,
     required: true,
   },
-  accessType: {
-    type: String,
-    enum: ["private", "public"],
-    default: "public",
-    required: true,
-  },
-  publicId: {
-    type: String,
-    unique: true,
-    sparse: true,
-  },
-  folderName: {
-    type: String,
-    default: "uploads",
-  },
+
   uploadedAt: {
     type: Date,
     default: Date.now,
   },
-})
+});
 
-fileSchema.index({ s3Key: 1 })
-fileSchema.index({ publicId: 1 })
-
-export const FileRecord = mongoose.models.FileRecord || mongoose.model("FileRecord", fileSchema)
+export const FileRecord =
+  mongoose.models.FileRecord || mongoose.model("FileRecord", fileSchema);
 
 export interface IFileRecord extends mongoose.Document {
-  _id: string
-  filename: string
-  s3Key: string
-  contentType: string
-  size: number
-  accessType: "private" | "public"
-  publicId?: string
-  folderName: string
-  uploadedAt: Date
+  _id: string;
+  filename: string;
+  s3Key: string;
+  size: number;
+  publicId:string,
+  uploadedAt: Date;
 }
 
-export function validateAdminCredentials(email: string, password: string): boolean {
-  const adminEmail = process.env.ADMIN_EMAIL
-  const adminPassword = process.env.ADMIN_PASSWORD
+export function validateAdminCredentials(
+  email: string,
+  password: string
+): boolean {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
 
-  return email === adminEmail && password === adminPassword
+  return email === adminEmail && password === adminPassword;
 }

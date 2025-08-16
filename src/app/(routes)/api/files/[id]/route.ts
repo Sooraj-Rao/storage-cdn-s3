@@ -1,4 +1,3 @@
-import { validateApiKey } from "@/app/lib/api-auth";
 import { connectToDatabase, FileRecord } from "@/app/lib/db";
 import { getFileFromS3 } from "@/app/lib/s3";
 import mongoose from "mongoose";
@@ -25,14 +24,7 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    if (file.accessType === "private") {
-      if (!validateApiKey(request)) {
-        return NextResponse.json(
-          { error: "API key required for private files" },
-          { status: 401 }
-        );
-      }
-    }
+   
 
     const { body, contentType, contentLength } = await getFileFromS3(
       file.s3Key

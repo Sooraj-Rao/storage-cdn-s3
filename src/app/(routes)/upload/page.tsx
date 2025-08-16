@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Upload, Copy, Trash2 } from "lucide-react";
 
 const API_BASE_URL = "";
-const API_KEY = "";
+const API_KEY = "djashkaksdjlansdjgvadshbdajsgdvkhbjasnljdja";
 
 interface UploadResponse {
   success: boolean;
@@ -13,14 +13,10 @@ interface UploadResponse {
   filename: string;
   size: number;
   contentType: string;
-  accessType: string;
-  folder: string;
 }
 
 export default function SimpleApiDemo() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [folder, setFolder] = useState("uploads");
-  const [accessType, setAccessType] = useState<"public" | "private">("public");
   const [loading, setLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadResponse[]>([]);
 
@@ -30,10 +26,8 @@ export default function SimpleApiDemo() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      formData.append("folder", folder);
-      formData.append("accessType", accessType);
 
-      const response = await fetch(`${API_BASE_URL}/api/v1/upload`, {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: "POST",
         headers: { "x-api-key": API_KEY },
         body: formData,
@@ -57,10 +51,13 @@ export default function SimpleApiDemo() {
   const deleteFile = async (fileId: string) => {
     if (!confirm("Delete this file?")) return;
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/files/${fileId}`, {
-        method: "DELETE",
-        headers: { "x-api-key": API_KEY },
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/admin/files/${fileId}`,
+        {
+          method: "DELETE",
+          headers: { "x-api-key": API_KEY },
+        }
+      );
 
       const result = await response.json();
       if (result.success) {
@@ -71,38 +68,6 @@ export default function SimpleApiDemo() {
       }
     } catch (error) {
       alert("Delete failed: " + (error as Error).message);
-    }
-  };
-
-  const updateFileAccess = async (
-    fileId: string,
-    newAccessType: "public" | "private"
-  ) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/files/${fileId}`, {
-        method: "PUT",
-        headers: {
-          "x-api-key": API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ accessType: newAccessType }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setUploadedFiles((prev) =>
-          prev.map((f) =>
-            f.fileId === fileId
-              ? { ...f, accessType: newAccessType, fileUrl: result.fileUrl }
-              : f
-          )
-        );
-        alert("Access updated!");
-      } else {
-        alert("Update failed: " + result.error);
-      }
-    } catch (error) {
-      alert("Update failed: " + (error as Error).message);
     }
   };
 
@@ -135,29 +100,6 @@ export default function SimpleApiDemo() {
                 className="w-full border rounded px-2 py-1"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Folder</label>
-              <input
-                value={folder}
-                onChange={(e) => setFolder(e.target.value)}
-                className="w-full border rounded px-2 py-1"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Access</label>
-              <select
-                value={accessType}
-                onChange={(e) =>
-                  setAccessType(e.target.value as "public" | "private")
-                }
-                className="w-full border rounded px-2 py-1"
-              >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
-              </select>
-            </div>
           </div>
 
           <button
@@ -180,7 +122,6 @@ export default function SimpleApiDemo() {
                       <p className="font-semibold">{file.filename}</p>
                       <p className="text-sm text-gray-500">
                         {(file.size / 1024 / 1024).toFixed(2)} MB •{" "}
-                        {file.accessType} • {file.folder}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -206,17 +147,6 @@ export default function SimpleApiDemo() {
                   <div className="flex gap-2">
                     <button
                       className="text-sm px-3 py-1 border rounded"
-                      onClick={() =>
-                        updateFileAccess(
-                          file.fileId,
-                          file.accessType === "public" ? "private" : "public"
-                        )
-                      }
-                    >
-                      Make {file.accessType === "public" ? "Private" : "Public"}
-                    </button>
-                    <button
-                      className="text-sm px-3 py-1 border rounded"
                       onClick={() => window.open(file.fileUrl, "_blank")}
                     >
                       View File
@@ -227,39 +157,6 @@ export default function SimpleApiDemo() {
             </div>
           </div>
         )}
-
-        <div className="bg-white shadow p-6 rounded-lg space-y-4">
-          <h2 className="text-lg font-semibold">API Usage</h2>
-
-          <div>
-            <h4 className="font-medium">1. Upload File</h4>
-            <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
-              {`curl -X POST ${API_BASE_URL}/api/v1/upload \\
-  -H "x-api-key: YOUR_API_KEY" \\
-  -F "file=@image.jpg" \\
-  -F "folder=uploads" \\
-  -F "accessType=public"`}
-            </pre>
-          </div>
-
-          <div>
-            <h4 className="font-medium">2. Delete File</h4>
-            <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
-              {`curl -X DELETE ${API_BASE_URL}/api/v1/files/FILE_ID \\
-  -H "x-api-key: YOUR_API_KEY"`}
-            </pre>
-          </div>
-
-          <div>
-            <h4 className="font-medium">3. Update Access</h4>
-            <pre className="bg-gray-100 p-2 rounded text-sm overflow-x-auto">
-              {`curl -X PUT ${API_BASE_URL}/api/v1/files/FILE_ID \\
-  -H "x-api-key: YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{"accessType": "private"}'`}
-            </pre>
-          </div>
-        </div>
       </div>
     </div>
   );
