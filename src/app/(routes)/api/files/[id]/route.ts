@@ -24,8 +24,6 @@ export async function GET(
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-   
-
     const { body, contentType, contentLength } = await getFileFromS3(
       file.s3Key
     );
@@ -38,12 +36,9 @@ export async function GET(
       headers.set("Content-Length", contentLength.toString());
     }
 
-    if (file.accessType === "public") {
-      headers.set("Cache-Control", "public, max-age=31536000, immutable"); // 1  yr
-    } else {
-      headers.set("Cache-Control", "private, no-cache");
-    }
-
+    headers.set("Cache-Control", "public, max-age=31536000, immutable"); // 1  yr
+    const filename = file.filename || "download";
+    headers.set("Content-Disposition", `attachment; filename="${filename}"`);
     return new NextResponse(body, { headers });
   } catch (error) {
     console.error("File access error:", error);

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 const MAX_FILE_SIZE = 1 * 1024 * 1024;
 
 function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return false;
+  if (!origin) return true;
   try {
     const url = new URL(origin);
     return url.hostname.endsWith(".soorajrao.in") ;
