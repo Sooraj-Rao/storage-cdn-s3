@@ -4,13 +4,20 @@ import { uploadFileToS3 } from "@/app/lib/s3";
 import { type NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
-const MAX_FILE_SIZE = 1 * 1024 * 1024;
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
 
 function isAllowedOrigin(origin: string | null): boolean {
-  if (!origin) return true;
+  if (!origin) return false;
   try {
     const url = new URL(origin);
-    return url.hostname.endsWith(".soorajrao.in") ;
+    const hostname = url.hostname;
+
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "soorajrao.in" ||
+      hostname.endsWith(".soorajrao.in")
+    );
   } catch {
     return false;
   }
@@ -68,7 +75,6 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(bytes);
 
     const fileKey = `files/${uuidv4()}-${file.name}`;
-
     const s3Key = await uploadFileToS3(buffer, fileKey, file.type);
 
     const publicId = uuidv4();
@@ -85,6 +91,7 @@ export async function POST(request: NextRequest) {
     const baseUrl =
       process.env.NEXT_PUBLIC_BASE_URL ||
       `${request.nextUrl.protocol}//${request.nextUrl.host}`;
+
     const fileUrl = `${baseUrl}/api/files/${publicId}`;
 
     return new NextResponse(
